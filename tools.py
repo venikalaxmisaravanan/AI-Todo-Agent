@@ -25,8 +25,17 @@ def add_task(task):
     return f"Task '{task}' added successfully."
 
 
-def list_tasks():
+def list_tasks(status=None):
+
     tasks = load_tasks()
+
+    if status:
+
+        tasks = [
+            task
+            for task in tasks
+            if task["status"].lower() == status.lower()
+        ]
 
     if not tasks:
         return "No tasks found."
@@ -82,10 +91,15 @@ add_task_json = {
 
 list_tasks_json = {
     "name": "list_tasks",
-    "description": "List all tasks in the todo list",
+    "description": "List tasks. Optionally filter by Pending or Completed.",
     "parameters": {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "status": {
+                "type": "string",
+                "description": "Optional. Use 'Pending' or 'Completed'."
+            }
+        }
     }
 }
 complete_task_json = {
