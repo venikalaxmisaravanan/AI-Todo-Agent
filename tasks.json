@@ -1,1 +1,26 @@
-[]
+[
+    {
+        "task": "Complete homework",
+        "status": "Completed"
+    },
+    {
+        "task": "Drink 8 liters of water daily",
+        "status": "Pending"
+    },
+    {
+        "task": "make coffee",
+        "status": "Pending"
+    },
+    {
+        "task": "do homework",
+        "status": "Pending"
+    },
+    {
+        "task": "clean room",
+        "status": "Pending"
+    },
+    {
+        "task": "help mom",
+        "status": "Pending"
+    }
+]

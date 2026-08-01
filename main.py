@@ -12,9 +12,9 @@ from tools import (
     tools
 )
 
-# -------------------------------------------------
-# 1. Load API Key
-# -------------------------------------------------
+# =====================================================
+# 1. Load Gemini API
+# =====================================================
 
 load_dotenv()
 
@@ -23,9 +23,9 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
 )
 
-# -------------------------------------------------
+# =====================================================
 # 2. System Prompt
-# -------------------------------------------------
+# =====================================================
 
 system_prompt = """
 You are an AI Todo Assistant.
@@ -38,12 +38,14 @@ Whenever the user asks to:
 - complete a task
 - list tasks
 
-Use the available tools instead of pretending you did it yourself.
+Always use the available tools.
+
+After receiving the tool result, explain the result naturally to the user.
 """
 
-# -------------------------------------------------
-# 3. Tool Mapping
-# -------------------------------------------------
+# =====================================================
+# 3. Map tool names to Python functions
+# =====================================================
 
 tool_functions = {
     "add_task": add_task,
@@ -52,9 +54,9 @@ tool_functions = {
     "list_tasks": list_tasks
 }
 
-# -------------------------------------------------
+# =====================================================
 # 4. Conversation History
-# -------------------------------------------------
+# =====================================================
 
 messages = [
     {
@@ -63,9 +65,9 @@ messages = [
     }
 ]
 
-# -------------------------------------------------
-# 5. Main Chat Loop
-# -------------------------------------------------
+# =====================================================
+# 5. Chat Loop
+# =====================================================
 
 while True:
 
@@ -74,10 +76,12 @@ while True:
     if user.lower() == "exit":
         break
 
-    messages.append({
-        "role": "user",
-        "content": user
-    })
+    messages.append(
+        {
+            "role": "user",
+            "content": user
+        }
+    )
 
     response = client.chat.completions.create(
         model="models/gemini-flash-latest",
@@ -85,27 +89,52 @@ while True:
         tools=tools
     )
 
-    if response.choices[0].finish_reason == "tool_calls":
+    # =================================================
+    # Agent Loop
+    # Keep executing until Gemini no longer asks for tools
+    # =================================================
 
-        message = response.choices[0].message
+    while response.choices[0].finish_reason == "tool_calls":
 
-        messages.append(message)
+        assistant_message = response.choices[0].message
 
-        for tool_call in message.tool_calls:
+        messages.append(assistant_message)
 
-            print("\nGemini wants to call a tool!")
+        for tool_call in assistant_message.tool_calls:
 
-            print("Tool Name :", tool_call.function.name)
+            tool_name = tool_call.function.name
 
-            print("Arguments :", tool_call.function.arguments)
+            arguments = json.loads(tool_call.function.arguments)
 
-    else:
+            tool_function = tool_functions[tool_name]
 
-        reply = response.choices[0].message.content
+            tool_result = tool_function(**arguments)
 
-        print("\nAssistant:", reply)
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": tool_result
+                }
+            )
 
-        messages.append({
+        response = client.chat.completions.create(
+            model="models/gemini-flash-latest",
+            messages=messages,
+            tools=tools
+        )
+
+    # =================================================
+    # Final assistant response
+    # =================================================
+
+    reply = response.choices[0].message.content
+
+    print("\nAssistant:", reply)
+
+    messages.append(
+        {
             "role": "assistant",
             "content": reply
-        })
+        }
+    )
