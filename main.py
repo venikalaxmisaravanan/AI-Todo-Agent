@@ -47,3 +47,9 @@ while True:
         "role": "user",
         "content": user
     })
+    response = client.chat.completions.create(
+    model="models/gemini-flash-latest",
+    messages=messages,
+    tools=tools
+)
+    print(response)
